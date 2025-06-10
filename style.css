@@ -59,3 +59,11 @@ li:hover {
   color: #000;
   cursor: pointer;
 }
+
+.profile-pic {
+  display: block;
+  width: 200px;
+  border-radius: 12px;
+  margin-top: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
