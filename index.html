@@ -30,7 +30,24 @@
     <section>
       <h2>My Projects</h2>
       <div class="projects-grid">
-        <!-- Projects will be loaded dynamically -->
+        <div class="project-card">
+          <h3>🇩🇪 German Lernreise</h3>
+          <p>Interactive German learning app with flashcards and grammar drills</p>
+          <div class="project-tags">
+            <span class="tag">JavaScript</span>
+            <span class="tag">Language Learning</span>
+          </div>
+          <a href="#" class="project-link">View Project →</a>
+        </div>
+        <div class="project-card">
+          <h3>🤖 helpme.AI</h3>
+          <p>Turn your word vomit into actionable tasks and organized plans</p>
+          <div class="project-tags">
+            <span class="tag">AI</span>
+            <span class="tag">Productivity</span>
+          </div>
+          <a href="#" class="project-link">View Project →</a>
+        </div>
       </div>
     </section>
 
@@ -42,6 +59,22 @@
         <h3>About Me</h3>
         <p id="aboutText"></p>
         <button onclick="editAbout()" class="edit-btn">Edit</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>💬 Leave a Comment</h2>
+      <div class="comment-form">
+        <input type="text" id="commenterName" placeholder="Your name (optional)" />
+        <textarea id="commentInput" rows="4" placeholder="Leave me a message! What do you think of my portfolio? Any feedback or just say hi! 😊"></textarea>
+        <button onclick="submitComment()">Send Message 🚀</button>
+      </div>
+      
+      <div class="comments-section">
+        <h3>📝 Recent Comments</h3>
+        <div id="commentsList" class="comments-list">
+          <!-- Comments will be loaded here -->
+        </div>
       </div>
     </section>
 

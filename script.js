@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializePortfolio() {
     initializeTheme();
     loadAboutMe();
+    loadComments();
 }
 
 // Load About Me from localStorage
@@ -146,6 +147,123 @@ function initializeTheme() {
     if (themeToggle) {
         themeToggle.addEventListener('click', toggleTheme);
     }
+}
+
+// Comment System Functions
+function submitComment() {
+    const nameInput = document.getElementById('commenterName');
+    const commentInput = document.getElementById('commentInput');
+    const name = nameInput.value.trim() || 'Anonymous';
+    const commentText = commentInput.value.trim();
+    
+    if (!commentText) {
+        showNotification('Please write a comment first! 💬', 'error');
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = document.querySelector('button[onclick="submitComment()"]');
+    if (submitBtn) {
+        submitBtn.textContent = 'Sending...';
+        submitBtn.disabled = true;
+    }
+    
+    try {
+        // Create comment object
+        const comment = {
+            id: Date.now(),
+            author: name,
+            text: commentText,
+            timestamp: new Date().toISOString(),
+            date: new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+        };
+        
+        // Save to localStorage
+        let comments = JSON.parse(localStorage.getItem('portfolioComments') || '[]');
+        comments.unshift(comment); // Add to beginning
+        
+        // Keep only last 20 comments
+        if (comments.length > 20) {
+            comments = comments.slice(0, 20);
+        }
+        
+        localStorage.setItem('portfolioComments', JSON.stringify(comments));
+        
+        // Clear form
+        nameInput.value = '';
+        commentInput.value = '';
+        
+        // Reload comments
+        loadComments();
+        
+        showNotification('Thanks for your comment! 🎉');
+        
+    } catch (error) {
+        console.error('Error saving comment:', error);
+        showNotification('Error saving comment! 😅', 'error');
+    } finally {
+        // Reset button
+        if (submitBtn) {
+            submitBtn.textContent = 'Send Message 🚀';
+            submitBtn.disabled = false;
+        }
+    }
+}
+
+function loadComments() {
+    const commentsList = document.getElementById('commentsList');
+    if (!commentsList) return;
+    
+    try {
+        const comments = JSON.parse(localStorage.getItem('portfolioComments') || '[]');
+        
+        if (comments.length === 0) {
+            commentsList.innerHTML = `
+                <div class="empty-comments">
+                    <p>No comments yet! Be the first to leave a message 😊</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Add comment count
+        const commentsSection = document.querySelector('.comments-section h3');
+        if (commentsSection) {
+            commentsSection.innerHTML = `📝 Recent Comments <span class="comment-count">(${comments.length})</span>`;
+        }
+        
+        // Render comments
+        commentsList.innerHTML = comments.map(comment => `
+            <div class="comment-item">
+                <div class="comment-header">
+                    <span class="comment-author">${escapeHtml(comment.author)}</span>
+                    <span class="comment-date">${comment.date}</span>
+                </div>
+                <p class="comment-text">${escapeHtml(comment.text)}</p>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading comments:', error);
+        commentsList.innerHTML = `
+            <div class="empty-comments">
+                <p>Error loading comments 😅</p>
+            </div>
+        `;
+    }
+}
+
+// Utility function to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // Add CSS for notifications
