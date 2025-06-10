@@ -28,10 +28,20 @@
 
     <section>
       <h2>My Projects</h2>
-      <ul>
-        <li><a href="#">German Lernreise</a></li>
-        <li><a href="#">helpme.AI</a></li>
-      </ul>
+      <div class="projects-grid">
+        <!-- Projects will be loaded dynamically -->
+      </div>
+    </section>
+
+    <section>
+      <h2>Edit About Me</h2>
+      <textarea id="aboutInput" rows="3" cols="30" placeholder="Tell the world about yourself..."></textarea>
+      <button onclick="saveAbout()">Save to Database</button>
+      <div id="aboutDisplay" class="about-display hidden">
+        <h3>About Me</h3>
+        <p id="aboutText"></p>
+        <button onclick="editAbout()" class="edit-btn">Edit</button>
+      </div>
     </section>
 
   </main>
@@ -40,3 +50,5 @@
   </footer>
 </body>
 </html>
+
+<script type="module" src="script.js"></script>
