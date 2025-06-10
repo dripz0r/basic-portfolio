@@ -7,15 +7,7 @@ let supabase = null;
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Supabase client
-    if (window.supabase) {
-        supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
-        console.log('✅ Supabase initialized');
-    } else {
-        console.log('⚠️ Supabase not available, using localStorage only');
-    }
-    
-    // Initialize portfolio
+    console.log('🚀 Portfolio initialized');
     initializePortfolio();
 });
 
@@ -24,38 +16,8 @@ function initializePortfolio() {
     loadAboutMe();
 }
 
-// Load About Me from Supabase or localStorage
-async function loadAboutMe() {
-    try {
-        if (supabase) {
-            console.log('🔍 Trying to load from Supabase...');
-            const { data, error } = await supabase
-                .from('about_me')
-                .select('text')
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .single();
-
-            if (error) {
-                console.log('Supabase error:', error.message);
-                // If it's just "no rows found", that's okay
-                if (error.code !== 'PGRST116') {
-                    throw error;
-                }
-            }
-
-            if (data && data.text) {
-                displayAboutText(data.text);
-                toggleAboutMode(false);
-                console.log('✅ Loaded from Supabase:', data.text);
-                return;
-            }
-        }
-    } catch (error) {
-        console.log('Supabase not available, using localStorage:', error.message);
-    }
-    
-    // Fallback to localStorage
+// Load About Me from localStorage
+function loadAboutMe() {
     const savedAbout = localStorage.getItem('aboutMe');
     if (savedAbout) {
         displayAboutText(savedAbout);
@@ -64,7 +26,7 @@ async function loadAboutMe() {
     }
 }
 
-// Save About Me to Supabase and localStorage
+// Save About Me to localStorage (and try Supabase later)
 async function saveAbout() {
     const aboutInput = document.getElementById('aboutInput');
     const aboutText = aboutInput.value;
@@ -74,45 +36,27 @@ async function saveAbout() {
         return;
     }
     
-    try {
-        // Show loading state
-        const saveBtn = document.querySelector('button[onclick="saveAbout()"]');
-        if (saveBtn) {
-            saveBtn.textContent = 'Saving...';
-            saveBtn.disabled = true;
-        }
+    // Show loading state
+    const saveBtn = document.querySelector('button[onclick="saveAbout()"]');
+    if (saveBtn) {
+        saveBtn.textContent = 'Saving...';
+        saveBtn.disabled = true;
+    }
 
-        // Always save locally first
+    try {
+        // Save locally
         localStorage.setItem('aboutMe', aboutText);
         console.log('📱 Saved to localStorage');
-
-        // Try to save to Supabase
-        if (supabase) {
-            console.log('💾 Trying to save to Supabase...');
-            const { data, error } = await supabase
-                .from('about_me')
-                .insert([{ text: aboutText }]);
-
-            if (error) {
-                console.log('Supabase save error:', error.message);
-                showNotification('Saved locally (database unavailable) 📱');
-            } else {
-                console.log('✅ Saved to Supabase successfully');
-                showNotification('About me saved to database! 🎉');
-            }
-        } else {
-            showNotification('Saved locally 📱');
-        }
         
         displayAboutText(aboutText);
         toggleAboutMode(false);
+        showNotification('About me saved! 🎉');
         
     } catch (error) {
         console.error('Error saving:', error);
-        showNotification('Saved locally only 😅', 'error');
+        showNotification('Error saving! 😅', 'error');
     } finally {
         // Reset button state
-        const saveBtn = document.querySelector('button[onclick="saveAbout()"]');
         if (saveBtn) {
             saveBtn.textContent = 'Save';
             saveBtn.disabled = false;
