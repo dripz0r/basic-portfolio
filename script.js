@@ -2,175 +2,122 @@
 const supabaseUrl = 'https://sfgjkagltcoqtevgswna.supabase.co'
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZ2prYWdsdGNvcXRldmdzd25hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1ODM1NzYsImV4cCI6MjA2NTE1OTU3Nn0.Y4Qg5KOI5FBZFMTS9U_p3tfeJjK4Ijg1Z-2SD367VLE'
 
-// Initialize Supabase client
-const supabase = window.supabase?.createClient(supabaseUrl, supabaseAnonKey)
+// Wait for Supabase to load, then initialize
+let supabase = null;
 
-class PortfolioManager {
-    constructor() {
-        this.initializeTheme();
-        this.loadAboutMe();
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Supabase client
+    if (window.supabase) {
+        supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+        console.log('✅ Supabase initialized');
+    } else {
+        console.log('⚠️ Supabase not available, using localStorage only');
     }
+    
+    // Initialize portfolio
+    initializePortfolio();
+});
 
-    // Load About Me from Supabase or localStorage
-    async loadAboutMe() {
-        try {
-            if (supabase) {
-                const { data, error } = await supabase
-                    .from('about_me')
-                    .select('text')
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .single();
+function initializePortfolio() {
+    initializeTheme();
+    loadAboutMe();
+}
 
-                if (data && data.text) {
-                    this.displayAboutText(data.text);
-                    this.toggleAboutMode(false);
-                    console.log('✅ Loaded from Supabase:', data.text);
-                    return;
+// Load About Me from Supabase or localStorage
+async function loadAboutMe() {
+    try {
+        if (supabase) {
+            console.log('🔍 Trying to load from Supabase...');
+            const { data, error } = await supabase
+                .from('about_me')
+                .select('text')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (error) {
+                console.log('Supabase error:', error.message);
+                // If it's just "no rows found", that's okay
+                if (error.code !== 'PGRST116') {
+                    throw error;
                 }
             }
-        } catch (error) {
-            console.log('Supabase not available, using localStorage');
-        }
-        
-        // Fallback to localStorage
-        const savedAbout = localStorage.getItem('aboutMe');
-        if (savedAbout) {
-            this.displayAboutText(savedAbout);
-            this.toggleAboutMode(false);
-        }
-    }
 
-    // Save About Me to Supabase and localStorage
-    async saveAbout() {
-        const aboutInput = document.getElementById('aboutInput');
-        const aboutText = aboutInput.value;
-        
-        if (aboutText.trim() === '') {
-            this.showNotification('Yo, type something first! 💭', 'error');
-            return;
-        }
-        
-        try {
-            // Show loading state
-            const saveBtn = document.querySelector('button[onclick="saveAbout()"]');
-            if (saveBtn) {
-                saveBtn.textContent = 'Saving...';
-                saveBtn.disabled = true;
-            }
-
-            // Try to save to Supabase
-            if (supabase) {
-                const { data, error } = await supabase
-                    .from('about_me')
-                    .insert([{ text: aboutText }]);
-
-                if (!error) {
-                    console.log('✅ Saved to Supabase:', aboutText);
-                    this.showNotification('About me saved to database! 🎉');
-                } else {
-                    console.log('Supabase error, saving locally:', error);
-                    this.showNotification('Saved locally 📱');
-                }
-            } else {
-                this.showNotification('Saved locally 📱');
-            }
-
-            // Always save locally as backup
-            localStorage.setItem('aboutMe', aboutText);
-            
-            this.displayAboutText(aboutText);
-            this.toggleAboutMode(false);
-            
-        } catch (error) {
-            console.error('Error saving:', error);
-            
-            // Fallback to localStorage
-            localStorage.setItem('aboutMe', aboutText);
-            this.displayAboutText(aboutText);
-            this.toggleAboutMode(false);
-            
-            this.showNotification('Saved locally (database error) 😅', 'error');
-        } finally {
-            // Reset button state
-            const saveBtn = document.querySelector('button[onclick="saveAbout()"]');
-            if (saveBtn) {
-                saveBtn.textContent = 'Save';
-                saveBtn.disabled = false;
+            if (data && data.text) {
+                displayAboutText(data.text);
+                toggleAboutMode(false);
+                console.log('✅ Loaded from Supabase:', data.text);
+                return;
             }
         }
+    } catch (error) {
+        console.log('Supabase not available, using localStorage:', error.message);
     }
-
-    // Enhanced theme management
-    toggleTheme() {
-        const body = document.body;
-        const themeToggle = document.getElementById('themeToggle');
-        
-        body.classList.toggle('dark-theme');
-        
-        const isDark = body.classList.contains('dark-theme');
-        themeToggle.textContent = isDark ? '☀️' : '🌙';
-        
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    }
-
-    // Utility methods
-    displayAboutText(text) {
-        const aboutTextElement = document.getElementById('aboutText');
-        if (aboutTextElement) {
-            aboutTextElement.textContent = text;
-        }
-    }
-
-    toggleAboutMode(isEditing) {
-        const input = document.getElementById('aboutInput');
-        const saveBtn = document.querySelector('button[onclick="portfolio.saveAbout()"]');
-        const display = document.getElementById('aboutDisplay');
-        
-        if (isEditing) {
-            input.style.display = 'block';
-            saveBtn.style.display = 'inline-block';
-            display.classList.add('hidden');
-        } else {
-            input.style.display = 'none';
-            saveBtn.style.display = 'none';
-            display.classList.remove('hidden');
-        }
-    }
-
-    showNotification(message, type = 'success') {
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.textContent = message;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
-    }
-
-    initializeTheme() {
-        const savedTheme = localStorage.getItem('theme');
-        const themeToggle = document.getElementById('themeToggle');
-        
-        if (savedTheme === 'dark') {
-            document.body.classList.add('dark-theme');
-            if (themeToggle) themeToggle.textContent = '☀️';
-        }
-        
-        if (themeToggle) {
-            themeToggle.addEventListener('click', () => this.toggleTheme());
-        }
+    
+    // Fallback to localStorage
+    const savedAbout = localStorage.getItem('aboutMe');
+    if (savedAbout) {
+        displayAboutText(savedAbout);
+        toggleAboutMode(false);
+        console.log('📱 Loaded from localStorage:', savedAbout);
     }
 }
 
-// Initialize the portfolio manager
-const portfolio = new PortfolioManager();
+// Save About Me to Supabase and localStorage
+async function saveAbout() {
+    const aboutInput = document.getElementById('aboutInput');
+    const aboutText = aboutInput.value;
+    
+    if (aboutText.trim() === '') {
+        showNotification('Yo, type something first! 💭', 'error');
+        return;
+    }
+    
+    try {
+        // Show loading state
+        const saveBtn = document.querySelector('button[onclick="saveAbout()"]');
+        if (saveBtn) {
+            saveBtn.textContent = 'Saving...';
+            saveBtn.disabled = true;
+        }
 
-// Global functions for onclick handlers
-function saveAbout() {
-    portfolio.saveAbout();
+        // Always save locally first
+        localStorage.setItem('aboutMe', aboutText);
+        console.log('📱 Saved to localStorage');
+
+        // Try to save to Supabase
+        if (supabase) {
+            console.log('💾 Trying to save to Supabase...');
+            const { data, error } = await supabase
+                .from('about_me')
+                .insert([{ text: aboutText }]);
+
+            if (error) {
+                console.log('Supabase save error:', error.message);
+                showNotification('Saved locally (database unavailable) 📱');
+            } else {
+                console.log('✅ Saved to Supabase successfully');
+                showNotification('About me saved to database! 🎉');
+            }
+        } else {
+            showNotification('Saved locally 📱');
+        }
+        
+        displayAboutText(aboutText);
+        toggleAboutMode(false);
+        
+    } catch (error) {
+        console.error('Error saving:', error);
+        showNotification('Saved locally only 😅', 'error');
+    } finally {
+        // Reset button state
+        const saveBtn = document.querySelector('button[onclick="saveAbout()"]');
+        if (saveBtn) {
+            saveBtn.textContent = 'Save';
+            saveBtn.disabled = false;
+        }
+    }
 }
 
 function editAbout() {
@@ -179,7 +126,82 @@ function editAbout() {
     if (input) {
         input.value = aboutText;
     }
-    portfolio.toggleAboutMode(true);
+    toggleAboutMode(true);
+}
+
+// Enhanced theme management
+function toggleTheme() {
+    const body = document.body;
+    const themeToggle = document.getElementById('themeToggle');
+    
+    body.classList.toggle('dark-theme');
+    
+    const isDark = body.classList.contains('dark-theme');
+    themeToggle.textContent = isDark ? '☀️' : '🌙';
+    
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+
+// Utility functions
+function displayAboutText(text) {
+    const aboutTextElement = document.getElementById('aboutText');
+    if (aboutTextElement) {
+        aboutTextElement.textContent = text;
+    }
+}
+
+function toggleAboutMode(isEditing) {
+    const input = document.getElementById('aboutInput');
+    const saveBtn = document.querySelector('button[onclick="saveAbout()"]');
+    const display = document.getElementById('aboutDisplay');
+    
+    if (isEditing) {
+        input.style.display = 'block';
+        saveBtn.style.display = 'inline-block';
+        display.classList.add('hidden');
+    } else {
+        input.style.display = 'none';
+        saveBtn.style.display = 'none';
+        display.classList.remove('hidden');
+    }
+}
+
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${type === 'error' ? '#ff4757' : '#2ed573'};
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        z-index: 1000;
+        animation: slideDown 0.3s ease;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+function initializeTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    const themeToggle = document.getElementById('themeToggle');
+    
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+        if (themeToggle) themeToggle.textContent = '☀️';
+    }
+    
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+    }
 }
 
 // Add CSS for notifications
@@ -194,14 +216,6 @@ style.textContent = `
             opacity: 1;
             transform: translateX(-50%) translateY(0);
         }
-    }
-    
-    .project-links {
-        margin-top: 1rem;
-    }
-    
-    .project-links .project-link {
-        margin-right: 1rem;
     }
 `;
 document.head.appendChild(style);
