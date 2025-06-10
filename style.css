@@ -1,5 +1,3 @@
-<link rel="stylesheet" href="style.css" />
-
 body {
   font-family: sans-serif;
   background-color: #f0f0f0;
@@ -16,4 +14,48 @@ header {
 
 ul {
   list-style: square;
+}
+
+a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: #0056b3;
+}
+
+section {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+footer {
+  margin-top: 3rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+h1, h2 {
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+li {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+li:hover {
+  background-color: #ddd;
+  color: #000;
+  cursor: pointer;
 }
