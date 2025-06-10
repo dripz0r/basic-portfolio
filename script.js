@@ -1,5 +1,9 @@
-// Import Supabase
-import { supabase } from './supabase-config.js'
+// Supabase configuration - inline for now
+const supabaseUrl = 'https://sfgjkagltcoqtevgswna.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZ2prYWdsdGNvcXRldmdzd25hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1ODM1NzYsImV4cCI6MjA2NTE1OTU3Nn0.Y4Qg5KOI5FBZFMTS9U_p3tfeJjK4Ijg1Z-2SD367VLE'
+
+// Initialize Supabase client
+const supabase = window.supabase?.createClient(supabaseUrl, supabaseAnonKey)
 
 class PortfolioManager {
     constructor() {
@@ -7,38 +11,37 @@ class PortfolioManager {
         this.loadAboutMe();
     }
 
-    // Load About Me from Supabase
+    // Load About Me from Supabase or localStorage
     async loadAboutMe() {
         try {
-            const { data, error } = await supabase
-                .from('about_me')
-                .select('text')
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .single();
+            if (supabase) {
+                const { data, error } = await supabase
+                    .from('about_me')
+                    .select('text')
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single();
 
-            if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-                console.error('Error loading about me:', error);
-                return;
-            }
-
-            if (data && data.text) {
-                this.displayAboutText(data.text);
-                this.toggleAboutMode(false);
-                console.log('✅ Loaded from Supabase:', data.text);
+                if (data && data.text) {
+                    this.displayAboutText(data.text);
+                    this.toggleAboutMode(false);
+                    console.log('✅ Loaded from Supabase:', data.text);
+                    return;
+                }
             }
         } catch (error) {
-            console.error('Error loading about me:', error);
-            // Fallback to localStorage
-            const savedAbout = localStorage.getItem('aboutMe');
-            if (savedAbout) {
-                this.displayAboutText(savedAbout);
-                this.toggleAboutMode(false);
-            }
+            console.log('Supabase not available, using localStorage');
+        }
+        
+        // Fallback to localStorage
+        const savedAbout = localStorage.getItem('aboutMe');
+        if (savedAbout) {
+            this.displayAboutText(savedAbout);
+            this.toggleAboutMode(false);
         }
     }
 
-    // Save About Me to Supabase
+    // Save About Me to Supabase and localStorage
     async saveAbout() {
         const aboutInput = document.getElementById('aboutInput');
         const aboutText = aboutInput.value;
@@ -50,32 +53,37 @@ class PortfolioManager {
         
         try {
             // Show loading state
-            const saveBtn = document.querySelector('button[onclick="portfolio.saveAbout()"]');
+            const saveBtn = document.querySelector('button[onclick="saveAbout()"]');
             if (saveBtn) {
                 saveBtn.textContent = 'Saving...';
                 saveBtn.disabled = true;
             }
 
-            // Save to Supabase
-            const { data, error } = await supabase
-                .from('about_me')
-                .insert([{ text: aboutText }]);
+            // Try to save to Supabase
+            if (supabase) {
+                const { data, error } = await supabase
+                    .from('about_me')
+                    .insert([{ text: aboutText }]);
 
-            if (error) {
-                throw error;
+                if (!error) {
+                    console.log('✅ Saved to Supabase:', aboutText);
+                    this.showNotification('About me saved to database! 🎉');
+                } else {
+                    console.log('Supabase error, saving locally:', error);
+                    this.showNotification('Saved locally 📱');
+                }
+            } else {
+                this.showNotification('Saved locally 📱');
             }
 
-            // Save locally as backup
+            // Always save locally as backup
             localStorage.setItem('aboutMe', aboutText);
             
             this.displayAboutText(aboutText);
             this.toggleAboutMode(false);
             
-            console.log('✅ Saved to Supabase:', aboutText);
-            this.showNotification('About me saved to database! 🎉');
-            
         } catch (error) {
-            console.error('Error saving to Supabase:', error);
+            console.error('Error saving:', error);
             
             // Fallback to localStorage
             localStorage.setItem('aboutMe', aboutText);
@@ -85,7 +93,7 @@ class PortfolioManager {
             this.showNotification('Saved locally (database error) 😅', 'error');
         } finally {
             // Reset button state
-            const saveBtn = document.querySelector('button[onclick="portfolio.saveAbout()"]');
+            const saveBtn = document.querySelector('button[onclick="saveAbout()"]');
             if (saveBtn) {
                 saveBtn.textContent = 'Save';
                 saveBtn.disabled = false;
@@ -166,7 +174,6 @@ function saveAbout() {
 }
 
 function editAbout() {
-    // Load current text from Supabase for editing
     const aboutText = document.getElementById('aboutText')?.textContent || '';
     const input = document.getElementById('aboutInput');
     if (input) {
