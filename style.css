@@ -1,0 +1,17 @@
+body {
+  font-family: sans-serif;
+  background-color: #f0f0f0;
+  color: #333;
+  padding: 2rem;
+}
+
+header {
+  background: #222;
+  color: white;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+ul {
+  list-style: square;
+}
